@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh repo *)",
+      "Bash(git init *)",
+      "Bash(git remote *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "PowerShell(npm install *)",
+      "PowerShell(uipro init *)",
+      "PowerShell(uipro *)",
+      "PowerShell(head *)",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\AlexanderESPA\\\\OneDrive - eleven\\\\Documents\\\\ao-auto\\\\src\" -Recurse | Select-Object -First 15 | ForEach-Object { $_.FullName })",
+      "PowerShell(New-Item *)"
+    ]
+  }
+}

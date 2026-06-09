@@ -4,14 +4,16 @@
 <!-- Describe what this project does -->
 
 ## Stack
-<!-- e.g. Next.js, Python, Node, etc. -->
+- **Framework**: Next.js (App Router)
+- **Database / Auth / Storage**: Supabase
+- **Hosting**: Vercel
 
 ## Commands
 ```bash
-# install
-# dev
-# build
-# test
+npm install       # install deps
+npm run dev       # dev server (localhost:3000)
+npm run build     # production build
+npm run lint      # lint
 ```
 
 ## Key Conventions
