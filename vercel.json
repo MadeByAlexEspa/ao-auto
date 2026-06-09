@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/boamp/sync",
+      "schedule": "0 7 * * *"
+    }
+  ]
+}
