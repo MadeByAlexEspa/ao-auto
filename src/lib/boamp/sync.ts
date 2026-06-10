@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { fetchBoampNotices } from '@/lib/boamp/fetch'
 import { boampConfig } from '@/lib/boamp/config'
 
@@ -16,7 +16,7 @@ export async function syncBoampNotices() {
     return { inserted: 0, date: today }
   }
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { error } = await supabase
     .from('boamp_notices')

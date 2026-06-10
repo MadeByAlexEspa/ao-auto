@@ -12,7 +12,9 @@
       "PowerShell(head *)",
       "PowerShell(Get-ChildItem \"C:\\\\Users\\\\AlexanderESPA\\\\OneDrive - eleven\\\\Documents\\\\ao-auto\\\\src\" -Recurse | Select-Object -First 15 | ForEach-Object { $_.FullName })",
       "PowerShell(New-Item *)",
-      "WebFetch(domain:boamp-datadila.opendatasoft.com)"
+      "WebFetch(domain:boamp-datadila.opendatasoft.com)",
+      "Bash(curl -s -H \"Authorization: Bearer $\\(grep CRON_SECRET .env.local)",
+      "Bash(curl -s -H \"Authorization: Bearer $\\(grep CRON_SECRET \"C:\\\\Users\\\\AlexanderESPA\\\\OneDrive - eleven\\\\Documents\\\\ao-auto\\\\.env.local\")"
     ]
   }
 }
