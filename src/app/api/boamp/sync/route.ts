@@ -29,14 +29,13 @@ export async function GET(request: Request) {
 
     const supabase = await createClient()
 
-    const { error, count } = await supabase
+    const { error } = await supabase
       .from('boamp_notices')
       .upsert(notices, { onConflict: 'idweb', ignoreDuplicates: true })
-      .select('id', { count: 'exact', head: true })
 
     if (error) throw error
 
-    return NextResponse.json({ inserted: count ?? notices.length, date: today })
+    return NextResponse.json({ inserted: notices.length, date: today })
   } catch (err) {
     console.error('[boamp/sync]', err)
     return NextResponse.json({ error: String(err) }, { status: 500 })
