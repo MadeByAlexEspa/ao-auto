@@ -110,7 +110,7 @@ export default async function BoampPage({
 
   return (
     <AppShell userEmail={user?.email}>
-      <div className="max-w-5xl mx-auto px-6 py-12">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Appels d&apos;offre</h1>
@@ -166,10 +166,10 @@ export default async function BoampPage({
           </div>
         )}
 
-        <ul className="flex flex-col gap-3">
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {visibleNotices.map(n => (
-            <li key={`${n.source}-${n.id}`} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all">
-              <div className="flex items-start justify-between gap-4">
+            <li key={`${n.source}-${n.id}`} className="flex rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all">
+              <div className="flex flex-col w-full gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className={`inline-flex items-center rounded-full text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 ${
@@ -232,7 +232,7 @@ export default async function BoampPage({
                 {n.detailHref ? (
                   <Link
                     href={n.detailHref}
-                    className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors whitespace-nowrap"
+                    className="self-start rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors whitespace-nowrap"
                   >
                     Voir le détail →
                   </Link>
@@ -241,7 +241,7 @@ export default async function BoampPage({
                     href={n.url_avis}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors whitespace-nowrap"
+                    className="self-start rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors whitespace-nowrap"
                   >
                     Voir l&apos;avis →
                   </a>

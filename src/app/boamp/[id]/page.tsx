@@ -57,12 +57,14 @@ export default async function TenderDetailPage({
 
   return (
     <AppShell userEmail={user?.email}>
-      <div className="max-w-3xl mx-auto px-6 py-12">
+      <div className="max-w-6xl mx-auto px-6 lg:px-8 py-12">
         <Link href="/boamp" className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">
           ← Retour aux appels d&apos;offre
         </Link>
 
-        <div className="mt-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mt-4 grid gap-6 lg:grid-cols-3 lg:items-start">
+        <div className="lg:col-span-2 flex flex-col gap-6">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <span className="inline-flex items-center rounded-full text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 bg-indigo-100 text-indigo-700">
               BOAMP
@@ -115,33 +117,8 @@ export default async function TenderDetailPage({
           )}
         </div>
 
-        {extraction && (extraction.scope_summary || extraction.contact || extraction.submission_method) && (
-          <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="font-semibold text-slate-900">Extraction par IA</h2>
-
-            {extraction.scope_summary && (
-              <div className="mt-3">
-                <h3 className="text-sm font-medium text-slate-700">Résumé du marché</h3>
-                <p className="mt-1 text-sm text-slate-600 leading-relaxed whitespace-pre-line">{extraction.scope_summary}</p>
-              </div>
-            )}
-            {extraction.contact && (
-              <div className="mt-3">
-                <h3 className="text-sm font-medium text-slate-700">Contact</h3>
-                <p className="mt-1 text-sm text-slate-600 leading-relaxed whitespace-pre-line">{extraction.contact}</p>
-              </div>
-            )}
-            {extraction.submission_method && (
-              <div className="mt-3">
-                <h3 className="text-sm font-medium text-slate-700">Modalités de soumission</h3>
-                <p className="mt-1 text-sm text-slate-600 leading-relaxed whitespace-pre-line">{extraction.submission_method}</p>
-              </div>
-            )}
-          </div>
-        )}
-
         {user && (
-          <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm flex items-center justify-between gap-4 flex-wrap">
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm flex items-center justify-between gap-4 flex-wrap">
             <div>
               <h2 className="font-semibold text-slate-900">Réponse à cet appel d&apos;offre</h2>
               <p className="mt-1 text-sm text-slate-500">
@@ -170,6 +147,33 @@ export default async function TenderDetailPage({
             )}
           </div>
         )}
+        </div>
+
+        {extraction && (extraction.scope_summary || extraction.contact || extraction.submission_method) && (
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="font-semibold text-slate-900">Extraction par IA</h2>
+
+            {extraction.scope_summary && (
+              <div className="mt-3">
+                <h3 className="text-sm font-medium text-slate-700">Résumé du marché</h3>
+                <p className="mt-1 text-sm text-slate-600 leading-relaxed whitespace-pre-line">{extraction.scope_summary}</p>
+              </div>
+            )}
+            {extraction.contact && (
+              <div className="mt-3">
+                <h3 className="text-sm font-medium text-slate-700">Contact</h3>
+                <p className="mt-1 text-sm text-slate-600 leading-relaxed whitespace-pre-line">{extraction.contact}</p>
+              </div>
+            )}
+            {extraction.submission_method && (
+              <div className="mt-3">
+                <h3 className="text-sm font-medium text-slate-700">Modalités de soumission</h3>
+                <p className="mt-1 text-sm text-slate-600 leading-relaxed whitespace-pre-line">{extraction.submission_method}</p>
+              </div>
+            )}
+          </div>
+        )}
+        </div>
       </div>
     </AppShell>
   )

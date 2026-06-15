@@ -105,13 +105,14 @@ export default async function SettingsPage() {
 
   return (
     <AppShell userEmail={user.email}>
-      <div className="max-w-5xl mx-auto px-6 py-12">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-slate-900">Paramètres</h1>
           <p className="mt-1 text-slate-500">Configuration propre à votre organisation.</p>
         </div>
 
-        <div className="max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="font-semibold text-slate-900">Extraction par IA</h2>
           <p className="mt-1 text-sm text-slate-500">
             Modèle utilisé pour résumer les avis et en extraire le contact et les modalités de soumission.
@@ -140,7 +141,7 @@ export default async function SettingsPage() {
           </form>
         </div>
 
-        <div className="max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm mt-6">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="font-semibold text-slate-900">Filtres de pertinence</h2>
           <p className="mt-1 text-sm text-slate-500">
             Un avis est pertinent s&apos;il correspond à un code CPV OU un mot-clé, ET à un département (si renseigné).
@@ -188,6 +189,7 @@ export default async function SettingsPage() {
               Enregistrer
             </button>
           </form>
+        </div>
         </div>
       </div>
     </AppShell>

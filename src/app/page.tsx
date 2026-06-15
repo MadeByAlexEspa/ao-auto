@@ -132,7 +132,7 @@ export default async function Home() {
 
   return (
     <AppShell userEmail={user.email}>
-      <div className="max-w-5xl mx-auto px-6 py-12">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Tableau de bord</h1>
@@ -151,7 +151,7 @@ export default async function Home() {
           </form>
         </div>
 
-        <div className="mb-8 grid sm:grid-cols-2 gap-4">
+        <div className="mb-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link
             href="/boamp"
             className="group rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
@@ -192,15 +192,14 @@ export default async function Home() {
             </p>
           </div>
         ) : (
-          <ul className="flex flex-col gap-3">
+          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {selectedTenders.map(t => t.boamp_notices && (
               <li key={t.tender_id}>
                 <Link
                   href={`/boamp/${t.tender_id}/respond`}
-                  className="block rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
+                  className="flex h-full flex-col justify-between gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-700 text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5">
                           {STATUS_LABELS[t.status] ?? t.status}
@@ -227,10 +226,9 @@ export default async function Home() {
                         )}
                       </div>
                     </div>
-                    <span className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 whitespace-nowrap">
-                      Espace de traitement →
-                    </span>
-                  </div>
+                  <span className="self-start rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 whitespace-nowrap">
+                    Espace de traitement →
+                  </span>
                 </Link>
               </li>
             ))}
