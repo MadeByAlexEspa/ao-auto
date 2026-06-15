@@ -3,50 +3,67 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { AuthShell } from '@/components/auth-shell'
 
-async function loginAction(formData: FormData) {
+async function signupAction(formData: FormData) {
   'use server'
   const email = String(formData.get('email'))
   const password = String(formData.get('password'))
+  const orgName = String(formData.get('org_name'))
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { org_name: orgName },
+    },
+  })
 
   if (error) {
-    redirect(`/login?error=${encodeURIComponent(error.message)}`)
+    redirect(`/signup?error=${encodeURIComponent(error.message)}`)
+  }
+
+  if (!data.session) {
+    redirect('/login?notice=' + encodeURIComponent('Compte créé — vérifiez vos emails pour confirmer votre adresse.'))
   }
 
   redirect('/')
 }
 
-export default async function LoginPage({
+export default async function SignupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; notice?: string }>
+  searchParams: Promise<{ error?: string }>
 }) {
-  const { error, notice } = await searchParams
+  const { error } = await searchParams
 
   return (
     <AuthShell>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Connexion</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Créer un workspace</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Accédez à votre espace de veille appels d&apos;offre.
+          Démarrez votre espace de veille appels d&apos;offre en quelques secondes.
         </p>
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        {notice && (
-          <div className="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-sm text-emerald-700">
-            {notice}
-          </div>
-        )}
         {error && (
           <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
             {error}
           </div>
         )}
 
-        <form action={loginAction} className="flex flex-col gap-4">
+        <form action={signupAction} className="flex flex-col gap-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-slate-700">Nom du workspace</span>
+            <input
+              type="text"
+              name="org_name"
+              required
+              placeholder="Acme SAS"
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </label>
+
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-slate-700">Email</span>
             <input
@@ -65,8 +82,9 @@ export default async function LoginPage({
               type="password"
               name="password"
               required
-              autoComplete="current-password"
-              placeholder="••••••••"
+              minLength={6}
+              autoComplete="new-password"
+              placeholder="8 caractères minimum"
               className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
           </label>
@@ -75,15 +93,15 @@ export default async function LoginPage({
             type="submit"
             className="mt-2 rounded-lg bg-slate-900 text-white px-4 py-2.5 text-sm font-medium hover:bg-slate-700 transition-colors"
           >
-            Se connecter
+            Créer le workspace
           </button>
         </form>
       </div>
 
       <p className="mt-6 text-center text-sm text-slate-500">
-        Pas encore de compte ?{' '}
-        <Link href="/signup" className="font-medium text-indigo-600 hover:text-indigo-700">
-          Créer un workspace
+        Vous avez déjà un compte ?{' '}
+        <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-700">
+          Se connecter
         </Link>
       </p>
     </AuthShell>
