@@ -11,6 +11,19 @@ function parseList(value: FormDataEntryValue | null): string[] {
     .filter(Boolean)
 }
 
+// Each line is a group of synonyms (comma-separated, OR). A tender must
+// match at least one synonym in EVERY group (AND across groups).
+function parseKeywordGroups(value: FormDataEntryValue | null): string[][] {
+  return String(value ?? '')
+    .split('\n')
+    .map(parseList)
+    .filter(group => group.length > 0)
+}
+
+function formatKeywordGroups(groups: string[][]): string {
+  return groups.map(group => group.join(', ')).join('\n')
+}
+
 const MODEL_OPTIONS = [
   { value: 'openai/gpt-4o-mini', label: 'OpenAI GPT-4o mini' },
   { value: 'openai/gpt-4o', label: 'OpenAI GPT-4o' },
@@ -43,7 +56,7 @@ async function saveModelAction(formData: FormData) {
 async function saveFiltersAction(formData: FormData) {
   'use server'
   const cpv_codes = parseList(formData.get('cpv_codes'))
-  const keywords = parseList(formData.get('keywords'))
+  const keyword_groups = parseKeywordGroups(formData.get('keyword_groups'))
   const departments = parseList(formData.get('departments'))
 
   const supabase = await createClient()
@@ -59,7 +72,7 @@ async function saveFiltersAction(formData: FormData) {
 
   await supabase
     .from('org_filters')
-    .upsert({ org_id: profile.org_id, cpv_codes, keywords, departments }, { onConflict: 'org_id' })
+    .upsert({ org_id: profile.org_id, cpv_codes, keyword_groups, departments }, { onConflict: 'org_id' })
 
   revalidatePath('/settings')
   revalidatePath('/boamp')
@@ -97,10 +110,10 @@ export default async function SettingsPage() {
 
     const { data: filters } = await supabase
       .from('org_filters')
-      .select('cpv_codes, keywords, departments')
+      .select('cpv_codes, keyword_groups, departments')
       .eq('org_id', profile.org_id)
       .single()
-    if (filters) currentFilters = filters
+    if (filters) currentFilters = filters as typeof currentFilters
   }
 
   return (
@@ -144,8 +157,8 @@ export default async function SettingsPage() {
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="font-semibold text-slate-900">Filtres de pertinence</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Un avis est pertinent s&apos;il correspond à un code CPV OU un mot-clé, ET à un département (si renseigné).
-            Sans aucun filtre, aucun avis n&apos;est marqué pertinent.
+            Un avis est pertinent s&apos;il correspond à un code CPV OU à tous les groupes de mots-clés,
+            ET à un département (si renseigné). Sans aucun filtre, aucun avis n&apos;est marqué pertinent.
           </p>
 
           <form action={saveFiltersAction} className="mt-5 flex flex-col gap-4">
@@ -161,13 +174,16 @@ export default async function SettingsPage() {
             </label>
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-sm font-medium text-slate-700">Mots-clés (séparés par des virgules)</span>
-              <input
-                type="text"
-                name="keywords"
-                defaultValue={currentFilters.keywords.join(', ')}
-                placeholder="ex : nettoyage, espaces verts"
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              <span className="text-sm font-medium text-slate-700">Groupes de mots-clés (un groupe par ligne, synonymes séparés par des virgules)</span>
+              <p className="text-xs text-slate-400">
+                Un avis doit contenir au moins un terme de CHAQUE ligne pour être considéré comme un mot-clé pertinent.
+              </p>
+              <textarea
+                name="keyword_groups"
+                defaultValue={formatKeywordGroups(currentFilters.keyword_groups)}
+                rows={4}
+                placeholder={"nettoyage, propreté\nbureaux, locaux administratifs"}
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               />
             </label>
 

@@ -87,14 +87,14 @@ export default async function BoampPage({
     if (profile) {
       const { data: orgFilters } = await supabase
         .from('org_filters')
-        .select('cpv_codes, keywords, departments')
+        .select('cpv_codes, keyword_groups, departments')
         .eq('org_id', profile.org_id)
         .single()
-      if (orgFilters) filters = orgFilters
+      if (orgFilters) filters = orgFilters as typeof filters
     }
   }
 
-  const hasFilters = filters.cpv_codes.length > 0 || filters.keywords.length > 0 || filters.departments.length > 0
+  const hasFilters = filters.cpv_codes.length > 0 || filters.keyword_groups.length > 0 || filters.departments.length > 0
   const filteredNotices = unified.filter(n => isRelevant(n, filters))
 
   const totalPages = Math.max(1, Math.ceil(filteredNotices.length / PAGE_SIZE))
