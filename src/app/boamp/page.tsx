@@ -5,6 +5,19 @@ import { isRelevant, EMPTY_FILTERS } from '@/lib/filters'
 
 export const revalidate = 3600
 
+interface UnifiedNotice {
+  id: string
+  source: 'BOAMP' | 'PLACE'
+  titre: string
+  description: string | null
+  url_avis: string
+  date_parution: string | null
+  code_departement: string | null
+  nom_acheteur: string | null
+  date_limite_reponse: string | null
+  code_cpv: string | null
+}
+
 export default async function BoampPage({
   searchParams,
 }: {
@@ -16,11 +29,47 @@ export default async function BoampPage({
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: notices, error } = await supabase
-    .from('boamp_notices')
-    .select('idweb, titre, description, url_avis, date_parution, code_departement, nom_acheteur, date_limite_reponse, code_cpv')
-    .order('date_parution', { ascending: false })
-    .limit(50)
+  const [{ data: boampNotices, error: boampError }, { data: placeNotices, error: placeError }] = await Promise.all([
+    supabase
+      .from('boamp_notices')
+      .select('idweb, titre, description, url_avis, date_parution, code_departement, nom_acheteur, date_limite_reponse, code_cpv')
+      .order('date_parution', { ascending: false })
+      .limit(50),
+    supabase
+      .from('place_notices')
+      .select('reference, titre, description, url_avis, date_parution, code_departement, organisme, date_limite_reponse')
+      .order('date_parution', { ascending: false })
+      .limit(50),
+  ])
+
+  const error = boampError ?? placeError
+
+  const unified: UnifiedNotice[] = [
+    ...(boampNotices ?? []).map(n => ({
+      id: n.idweb,
+      source: 'BOAMP' as const,
+      titre: n.titre,
+      description: n.description,
+      url_avis: n.url_avis,
+      date_parution: n.date_parution,
+      code_departement: n.code_departement,
+      nom_acheteur: n.nom_acheteur,
+      date_limite_reponse: n.date_limite_reponse,
+      code_cpv: n.code_cpv,
+    })),
+    ...(placeNotices ?? []).map(n => ({
+      id: n.reference,
+      source: 'PLACE' as const,
+      titre: n.titre,
+      description: n.description,
+      url_avis: n.url_avis,
+      date_parution: n.date_parution,
+      code_departement: n.code_departement,
+      nom_acheteur: n.organisme,
+      date_limite_reponse: n.date_limite_reponse,
+      code_cpv: null,
+    })),
+  ].sort((a, b) => (b.date_parution ?? '').localeCompare(a.date_parution ?? ''))
 
   let filters = EMPTY_FILTERS
   if (user) {
@@ -42,8 +91,8 @@ export default async function BoampPage({
 
   const hasFilters = filters.cpv_codes.length > 0 || filters.keywords.length > 0 || filters.departments.length > 0
   const visibleNotices = showRelevantOnly
-    ? (notices ?? []).filter(n => isRelevant(n, filters))
-    : notices
+    ? unified.filter(n => isRelevant(n, filters))
+    : unified
 
   return (
     <main className="flex-1">
@@ -52,9 +101,9 @@ export default async function BoampPage({
       <div className="max-w-5xl mx-auto px-6 py-12">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Appels d&apos;offre BOAMP</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Appels d&apos;offre</h1>
             <p className="mt-1 text-slate-500">
-              {visibleNotices?.length ?? 0} avis {showRelevantOnly ? 'pertinents' : 'collectés'}
+              {visibleNotices.length} avis {showRelevantOnly ? 'pertinents' : 'collectés'} · BOAMP &amp; PLACE
             </p>
           </div>
 
@@ -94,7 +143,7 @@ export default async function BoampPage({
           </div>
         )}
 
-        {!error && !visibleNotices?.length && (showRelevantOnly ? hasFilters : true) && (
+        {!error && !visibleNotices.length && (showRelevantOnly ? hasFilters : true) && (
           <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
             <p className="text-slate-500">
               {showRelevantOnly
@@ -105,10 +154,17 @@ export default async function BoampPage({
         )}
 
         <ul className="flex flex-col gap-3">
-          {visibleNotices?.map(n => (
-            <li key={n.idweb} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all">
+          {visibleNotices.map(n => (
+            <li key={`${n.source}-${n.id}`} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`inline-flex items-center rounded-full text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 ${
+                      n.source === 'BOAMP' ? 'bg-indigo-100 text-indigo-700' : 'bg-teal-100 text-teal-700'
+                    }`}>
+                      {n.source}
+                    </span>
+                  </div>
                   <a
                     href={n.url_avis}
                     target="_blank"

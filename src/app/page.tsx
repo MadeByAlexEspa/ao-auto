@@ -1,12 +1,13 @@
 import Link from 'next/link'
 import { syncBoampNotices } from '@/lib/boamp/sync'
+import { syncPlaceNotices } from '@/lib/place/sync'
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { AppHeader } from '@/components/app-header'
 
 async function syncAction() {
   'use server'
-  await syncBoampNotices()
+  await Promise.all([syncBoampNotices(), syncPlaceNotices()])
   revalidatePath('/boamp')
   revalidatePath('/')
 }
