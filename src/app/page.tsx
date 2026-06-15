@@ -3,7 +3,12 @@ import { syncBoampNotices } from '@/lib/boamp/sync'
 import { syncPlaceNotices } from '@/lib/place/sync'
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { AppHeader } from '@/components/app-header'
+import { AppShell } from '@/components/app-shell'
+
+const STATUS_LABELS: Record<string, string> = {
+  drafted: 'En réponse',
+  submitted: 'Soumis',
+}
 
 async function syncAction() {
   'use server'
@@ -95,59 +100,143 @@ export default async function Home() {
     )
   }
 
-  return (
-    <main className="flex-1">
-      <AppHeader active="/" />
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('org_id')
+    .eq('id', user.id)
+    .single()
 
+  let selectedTenders: {
+    status: string
+    tender_id: string
+    boamp_notices: {
+      id: string
+      titre: string | null
+      nom_acheteur: string | null
+      code_departement: string | null
+      date_limite_reponse: string | null
+      url_avis: string | null
+    } | null
+  }[] = []
+
+  if (profile) {
+    const { data } = await supabase
+      .from('tender_org_status')
+      .select('status, tender_id, boamp_notices(id, titre, nom_acheteur, code_departement, date_limite_reponse, url_avis)')
+      .eq('org_id', profile.org_id)
+      .in('status', ['drafted', 'submitted'])
+      .order('updated_at', { ascending: false })
+
+    selectedTenders = (data ?? []) as unknown as typeof selectedTenders
+  }
+
+  return (
+    <AppShell userEmail={user.email}>
       <div className="max-w-5xl mx-auto px-6 py-12">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">Tableau de bord</h1>
-          <p className="mt-1 text-slate-500">
-            Suivi quotidien des appels d&apos;offre BOAMP par mots-clés et région.
-          </p>
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Tableau de bord</h1>
+            <p className="mt-1 text-slate-500">
+              Les appels d&apos;offre sélectionnés pour une réponse par votre équipe.
+            </p>
+          </div>
+
+          <form action={syncAction}>
+            <button
+              type="submit"
+              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+            >
+              Lancer la synchronisation
+            </button>
+          </form>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="mb-8 grid sm:grid-cols-2 gap-4">
           <Link
             href="/boamp"
             className="group rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
           >
             <h3 className="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">
-              Appels d&apos;offre →
+              Avis pertinents →
             </h3>
             <p className="mt-2 text-sm text-slate-500">
-              Consultez les derniers avis BOAMP collectés et leurs informations extraites.
+              Parcourez les appels d&apos;offre correspondant à vos filtres.
             </p>
           </Link>
 
           <Link
-            href="/settings"
+            href="/boamp?relevant=0"
             className="group rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
           >
             <h3 className="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">
-              Paramètres →
+              Tous les avis →
             </h3>
             <p className="mt-2 text-sm text-slate-500">
-              Choisissez le modèle IA utilisé pour l&apos;extraction des avis.
+              Consultez l&apos;ensemble des avis collectés, BOAMP &amp; PLACE.
             </p>
           </Link>
-
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col">
-            <h3 className="font-semibold text-slate-900">Synchronisation</h3>
-            <p className="mt-2 text-sm text-slate-500 flex-1">
-              La synchronisation BOAMP s&apos;exécute automatiquement chaque jour. Vous pouvez aussi la lancer manuellement.
-            </p>
-            <form action={syncAction} className="mt-4">
-              <button
-                type="submit"
-                className="rounded-lg bg-slate-900 text-white px-4 py-2 text-sm font-medium hover:bg-slate-700 transition-colors"
-              >
-                Lancer la synchronisation
-              </button>
-            </form>
-          </div>
         </div>
+
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+          Sélectionnés pour réponse
+        </h2>
+
+        {selectedTenders.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
+            <p className="text-slate-500">
+              Aucun appel d&apos;offre sélectionné pour le moment.{' '}
+              <Link href="/boamp" className="font-medium text-indigo-600 underline">
+                Parcourez les avis pertinents
+              </Link>{' '}
+              et sélectionnez-en un pour démarrer une réponse.
+            </p>
+          </div>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {selectedTenders.map(t => t.boamp_notices && (
+              <li key={t.tender_id}>
+                <Link
+                  href={`/boamp/${t.tender_id}/respond`}
+                  className="block rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-700 text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5">
+                          {STATUS_LABELS[t.status] ?? t.status}
+                        </span>
+                      </div>
+                      <p className="font-semibold text-slate-900 line-clamp-2">
+                        {t.boamp_notices.titre || 'Sans titre'}
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {t.boamp_notices.nom_acheteur && (
+                          <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-600 text-xs font-medium px-2.5 py-1">
+                            {t.boamp_notices.nom_acheteur}
+                          </span>
+                        )}
+                        {t.boamp_notices.code_departement && (
+                          <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-600 text-xs font-medium px-2.5 py-1">
+                            Dép. {t.boamp_notices.code_departement}
+                          </span>
+                        )}
+                        {t.boamp_notices.date_limite_reponse && (
+                          <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-700 text-xs font-medium px-2.5 py-1">
+                            Limite : {new Date(t.boamp_notices.date_limite_reponse).toLocaleString('fr-FR')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 whitespace-nowrap">
+                      Espace de traitement →
+                    </span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
-    </main>
+    </AppShell>
   )
 }

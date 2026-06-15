@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { DEFAULT_LLM_MODEL } from '@/lib/boamp/extract'
 import { EMPTY_FILTERS } from '@/lib/filters'
-import { AppHeader } from '@/components/app-header'
+import { AppShell } from '@/components/app-shell'
 
 function parseList(value: FormDataEntryValue | null): string[] {
   return String(value ?? '')
@@ -71,12 +71,9 @@ export default async function SettingsPage() {
 
   if (!user) {
     return (
-      <main className="flex-1">
-        <AppHeader active="/settings" />
-        <div className="max-w-5xl mx-auto px-6 py-12">
-          <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
-            <p className="text-slate-500">Connectez-vous pour accéder aux paramètres.</p>
-          </div>
+      <main className="flex-1 max-w-5xl mx-auto px-6 py-12 w-full">
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
+          <p className="text-slate-500">Connectez-vous pour accéder aux paramètres.</p>
         </div>
       </main>
     )
@@ -107,9 +104,7 @@ export default async function SettingsPage() {
   }
 
   return (
-    <main className="flex-1">
-      <AppHeader active="/settings" />
-
+    <AppShell userEmail={user.email}>
       <div className="max-w-5xl mx-auto px-6 py-12">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-slate-900">Paramètres</h1>
@@ -195,6 +190,6 @@ export default async function SettingsPage() {
           </form>
         </div>
       </div>
-    </main>
+    </AppShell>
   )
 }

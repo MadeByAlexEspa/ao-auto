@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { AppHeader } from '@/components/app-header'
+import { AppShell } from '@/components/app-shell'
 import { isRelevant, EMPTY_FILTERS } from '@/lib/filters'
 
 export const revalidate = 3600
@@ -16,6 +16,7 @@ interface UnifiedNotice {
   nom_acheteur: string | null
   date_limite_reponse: string | null
   code_cpv: string | null
+  detailHref: string | null
 }
 
 const PAGE_SIZE = 10
@@ -36,7 +37,7 @@ export default async function BoampPage({
   const [{ data: boampNotices, error: boampError }, { data: placeNotices, error: placeError }] = await Promise.all([
     supabase
       .from('boamp_notices')
-      .select('idweb, titre, description, url_avis, date_parution, code_departement, nom_acheteur, date_limite_reponse, code_cpv')
+      .select('id, idweb, titre, description, url_avis, date_parution, code_departement, nom_acheteur, date_limite_reponse, code_cpv')
       .order('date_parution', { ascending: false })
       .limit(200),
     supabase
@@ -60,6 +61,7 @@ export default async function BoampPage({
       nom_acheteur: n.nom_acheteur,
       date_limite_reponse: n.date_limite_reponse,
       code_cpv: n.code_cpv,
+      detailHref: `/boamp/${n.id}`,
     })),
     ...(placeNotices ?? []).map(n => ({
       id: n.reference,
@@ -72,6 +74,7 @@ export default async function BoampPage({
       nom_acheteur: n.organisme,
       date_limite_reponse: n.date_limite_reponse,
       code_cpv: null,
+      detailHref: null,
     })),
   ].sort((a, b) => (b.date_parution ?? '').localeCompare(a.date_parution ?? ''))
 
@@ -106,9 +109,7 @@ export default async function BoampPage({
   const pageHref = (p: number) => `/boamp?relevant=${relevantParam}&page=${p}`
 
   return (
-    <main className="flex-1">
-      <AppHeader active="/boamp" />
-
+    <AppShell userEmail={user?.email}>
       <div className="max-w-5xl mx-auto px-6 py-12">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -177,14 +178,23 @@ export default async function BoampPage({
                       {n.source}
                     </span>
                   </div>
-                  <a
-                    href={n.url_avis}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-slate-900 hover:text-indigo-600 line-clamp-2 transition-colors"
-                  >
-                    {n.titre || 'Sans titre'}
-                  </a>
+                  {n.detailHref ? (
+                    <Link
+                      href={n.detailHref}
+                      className="font-semibold text-slate-900 hover:text-indigo-600 line-clamp-2 transition-colors"
+                    >
+                      {n.titre || 'Sans titre'}
+                    </Link>
+                  ) : (
+                    <a
+                      href={n.url_avis}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-slate-900 hover:text-indigo-600 line-clamp-2 transition-colors"
+                    >
+                      {n.titre || 'Sans titre'}
+                    </a>
+                  )}
 
                   {n.description && (
                     <p className="mt-1.5 text-sm text-slate-500 line-clamp-2">{n.description}</p>
@@ -219,14 +229,23 @@ export default async function BoampPage({
                   </div>
                 </div>
 
-                <a
-                  href={n.url_avis}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors whitespace-nowrap"
-                >
-                  Voir l&apos;avis →
-                </a>
+                {n.detailHref ? (
+                  <Link
+                    href={n.detailHref}
+                    className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors whitespace-nowrap"
+                  >
+                    Voir le détail →
+                  </Link>
+                ) : (
+                  <a
+                    href={n.url_avis}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors whitespace-nowrap"
+                  >
+                    Voir l&apos;avis →
+                  </a>
+                )}
               </div>
             </li>
           ))}
@@ -258,6 +277,6 @@ export default async function BoampPage({
           </div>
         )}
       </div>
-    </main>
+    </AppShell>
   )
 }
