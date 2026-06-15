@@ -18,13 +18,17 @@ interface UnifiedNotice {
   code_cpv: string | null
 }
 
+const PAGE_SIZE = 10
+
 export default async function BoampPage({
   searchParams,
 }: {
-  searchParams: Promise<{ relevant?: string }>
+  searchParams: Promise<{ relevant?: string; page?: string }>
 }) {
-  const { relevant } = await searchParams
-  const showRelevantOnly = relevant === '1'
+  const { relevant, page } = await searchParams
+  // Default to relevant-only; pass relevant=0 to see everything.
+  const showRelevantOnly = relevant !== '0'
+  const currentPage = Math.max(1, parseInt(page ?? '1', 10) || 1)
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -34,12 +38,12 @@ export default async function BoampPage({
       .from('boamp_notices')
       .select('idweb, titre, description, url_avis, date_parution, code_departement, nom_acheteur, date_limite_reponse, code_cpv')
       .order('date_parution', { ascending: false })
-      .limit(50),
+      .limit(200),
     supabase
       .from('place_notices')
       .select('reference, titre, description, url_avis, date_parution, code_departement, organisme, date_limite_reponse')
       .order('date_parution', { ascending: false })
-      .limit(50),
+      .limit(200),
   ])
 
   const error = boampError ?? placeError
@@ -90,9 +94,16 @@ export default async function BoampPage({
   }
 
   const hasFilters = filters.cpv_codes.length > 0 || filters.keywords.length > 0 || filters.departments.length > 0
-  const visibleNotices = showRelevantOnly
+  const filteredNotices = showRelevantOnly
     ? unified.filter(n => isRelevant(n, filters))
     : unified
+
+  const totalPages = Math.max(1, Math.ceil(filteredNotices.length / PAGE_SIZE))
+  const safePage = Math.min(currentPage, totalPages)
+  const visibleNotices = filteredNotices.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+
+  const relevantParam = showRelevantOnly ? '1' : '0'
+  const pageHref = (p: number) => `/boamp?relevant=${relevantParam}&page=${p}`
 
   return (
     <main className="flex-1">
@@ -103,14 +114,15 @@ export default async function BoampPage({
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Appels d&apos;offre</h1>
             <p className="mt-1 text-slate-500">
-              {visibleNotices.length} avis {showRelevantOnly ? 'pertinents' : 'collectés'} · BOAMP &amp; PLACE
+              {filteredNotices.length} avis {showRelevantOnly ? 'pertinents' : 'collectés'} · BOAMP &amp; PLACE
+              {totalPages > 1 && ` · page ${safePage}/${totalPages}`}
             </p>
           </div>
 
           {user && (
             <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm">
               <Link
-                href="/boamp"
+                href="/boamp?relevant=0"
                 className={`rounded-md px-3 py-1.5 font-medium transition-colors ${
                   !showRelevantOnly ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
                 }`}
@@ -143,7 +155,7 @@ export default async function BoampPage({
           </div>
         )}
 
-        {!error && !visibleNotices.length && (showRelevantOnly ? hasFilters : true) && (
+        {!error && !filteredNotices.length && (showRelevantOnly ? hasFilters : true) && (
           <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
             <p className="text-slate-500">
               {showRelevantOnly
@@ -219,6 +231,32 @@ export default async function BoampPage({
             </li>
           ))}
         </ul>
+
+        {totalPages > 1 && (
+          <div className="mt-6 flex items-center justify-center gap-2">
+            <Link
+              href={pageHref(Math.max(1, safePage - 1))}
+              aria-disabled={safePage <= 1}
+              className={`rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium transition-colors ${
+                safePage <= 1 ? 'pointer-events-none opacity-40' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              ← Précédent
+            </Link>
+            <span className="text-sm text-slate-500">
+              Page {safePage} sur {totalPages}
+            </span>
+            <Link
+              href={pageHref(Math.min(totalPages, safePage + 1))}
+              aria-disabled={safePage >= totalPages}
+              className={`rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium transition-colors ${
+                safePage >= totalPages ? 'pointer-events-none opacity-40' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              Suivant →
+            </Link>
+          </div>
+        )}
       </div>
     </main>
   )
