@@ -1,10 +1,20 @@
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { AppHeader } from '@/components/app-header'
+import { isRelevant, EMPTY_FILTERS } from '@/lib/filters'
 
 export const revalidate = 3600
 
-export default async function BoampPage() {
+export default async function BoampPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ relevant?: string }>
+}) {
+  const { relevant } = await searchParams
+  const showRelevantOnly = relevant === '1'
+
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
   const { data: notices, error } = await supabase
     .from('boamp_notices')
@@ -12,16 +22,62 @@ export default async function BoampPage() {
     .order('date_parution', { ascending: false })
     .limit(50)
 
+  let filters = EMPTY_FILTERS
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('org_id')
+      .eq('id', user.id)
+      .single()
+
+    if (profile) {
+      const { data: orgFilters } = await supabase
+        .from('org_filters')
+        .select('cpv_codes, keywords, departments')
+        .eq('org_id', profile.org_id)
+        .single()
+      if (orgFilters) filters = orgFilters
+    }
+  }
+
+  const hasFilters = filters.cpv_codes.length > 0 || filters.keywords.length > 0 || filters.departments.length > 0
+  const visibleNotices = showRelevantOnly
+    ? (notices ?? []).filter(n => isRelevant(n, filters))
+    : notices
+
   return (
     <main className="flex-1">
       <AppHeader active="/boamp" />
 
       <div className="max-w-5xl mx-auto px-6 py-12">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">Appels d&apos;offre BOAMP</h1>
-          <p className="mt-1 text-slate-500">
-            {notices?.length ? `${notices.length} avis collectés` : 'Derniers avis collectés'}
-          </p>
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Appels d&apos;offre BOAMP</h1>
+            <p className="mt-1 text-slate-500">
+              {visibleNotices?.length ?? 0} avis {showRelevantOnly ? 'pertinents' : 'collectés'}
+            </p>
+          </div>
+
+          {user && (
+            <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm">
+              <Link
+                href="/boamp"
+                className={`rounded-md px-3 py-1.5 font-medium transition-colors ${
+                  !showRelevantOnly ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Tous
+              </Link>
+              <Link
+                href="/boamp?relevant=1"
+                className={`rounded-md px-3 py-1.5 font-medium transition-colors ${
+                  showRelevantOnly ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Pertinents
+              </Link>
+            </div>
+          )}
         </div>
 
         {error && (
@@ -30,14 +86,26 @@ export default async function BoampPage() {
           </div>
         )}
 
-        {!error && !notices?.length && (
+        {!error && showRelevantOnly && !hasFilters && (
+          <div className="mb-4 rounded-lg bg-indigo-50 border border-indigo-200 px-4 py-3 text-sm text-indigo-700">
+            Aucun filtre configuré.{' '}
+            <Link href="/settings" className="font-medium underline">Configurez vos filtres de pertinence</Link>{' '}
+            pour voir les avis correspondant à votre activité.
+          </div>
+        )}
+
+        {!error && !visibleNotices?.length && (showRelevantOnly ? hasFilters : true) && (
           <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
-            <p className="text-slate-500">Aucun résultat. Lancez une synchronisation depuis le tableau de bord.</p>
+            <p className="text-slate-500">
+              {showRelevantOnly
+                ? "Aucun avis pertinent pour le moment."
+                : 'Aucun résultat. Lancez une synchronisation depuis le tableau de bord.'}
+            </p>
           </div>
         )}
 
         <ul className="flex flex-col gap-3">
-          {notices?.map(n => (
+          {visibleNotices?.map(n => (
             <li key={n.idweb} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
