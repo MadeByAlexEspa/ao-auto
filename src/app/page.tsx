@@ -163,18 +163,6 @@ export default async function Home() {
               Parcourez les appels d&apos;offre correspondant à vos filtres.
             </p>
           </Link>
-
-          <Link
-            href="/boamp?relevant=0"
-            className="group rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
-          >
-            <h3 className="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">
-              Tous les avis →
-            </h3>
-            <p className="mt-2 text-sm text-slate-500">
-              Consultez l&apos;ensemble des avis collectés, BOAMP &amp; PLACE.
-            </p>
-          </Link>
         </div>
 
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">

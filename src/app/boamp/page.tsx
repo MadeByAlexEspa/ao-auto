@@ -24,11 +24,9 @@ const PAGE_SIZE = 10
 export default async function BoampPage({
   searchParams,
 }: {
-  searchParams: Promise<{ relevant?: string; page?: string }>
+  searchParams: Promise<{ page?: string }>
 }) {
-  const { relevant, page } = await searchParams
-  // Default to relevant-only; pass relevant=0 to see everything.
-  const showRelevantOnly = relevant !== '0'
+  const { page } = await searchParams
   const currentPage = Math.max(1, parseInt(page ?? '1', 10) || 1)
 
   const supabase = await createClient()
@@ -97,16 +95,13 @@ export default async function BoampPage({
   }
 
   const hasFilters = filters.cpv_codes.length > 0 || filters.keywords.length > 0 || filters.departments.length > 0
-  const filteredNotices = showRelevantOnly
-    ? unified.filter(n => isRelevant(n, filters))
-    : unified
+  const filteredNotices = unified.filter(n => isRelevant(n, filters))
 
   const totalPages = Math.max(1, Math.ceil(filteredNotices.length / PAGE_SIZE))
   const safePage = Math.min(currentPage, totalPages)
   const visibleNotices = filteredNotices.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
-  const relevantParam = showRelevantOnly ? '1' : '0'
-  const pageHref = (p: number) => `/boamp?relevant=${relevantParam}&page=${p}`
+  const pageHref = (p: number) => `/boamp?page=${p}`
 
   return (
     <AppShell userEmail={user?.email}>
@@ -115,31 +110,10 @@ export default async function BoampPage({
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Appels d&apos;offre</h1>
             <p className="mt-1 text-slate-500">
-              {filteredNotices.length} avis {showRelevantOnly ? 'pertinents' : 'collectés'} · BOAMP &amp; PLACE
+              {filteredNotices.length} avis pertinents · BOAMP &amp; PLACE
               {totalPages > 1 && ` · page ${safePage}/${totalPages}`}
             </p>
           </div>
-
-          {user && (
-            <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm">
-              <Link
-                href="/boamp?relevant=0"
-                className={`rounded-md px-3 py-1.5 font-medium transition-colors ${
-                  !showRelevantOnly ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Tous
-              </Link>
-              <Link
-                href="/boamp?relevant=1"
-                className={`rounded-md px-3 py-1.5 font-medium transition-colors ${
-                  showRelevantOnly ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Pertinents
-              </Link>
-            </div>
-          )}
         </div>
 
         {error && (
@@ -148,7 +122,7 @@ export default async function BoampPage({
           </div>
         )}
 
-        {!error && showRelevantOnly && !hasFilters && (
+        {!error && !hasFilters && (
           <div className="mb-4 rounded-lg bg-indigo-50 border border-indigo-200 px-4 py-3 text-sm text-indigo-700">
             Aucun filtre configuré.{' '}
             <Link href="/settings" className="font-medium underline">Configurez vos filtres de pertinence</Link>{' '}
@@ -156,13 +130,9 @@ export default async function BoampPage({
           </div>
         )}
 
-        {!error && !filteredNotices.length && (showRelevantOnly ? hasFilters : true) && (
+        {!error && !filteredNotices.length && hasFilters && (
           <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
-            <p className="text-slate-500">
-              {showRelevantOnly
-                ? "Aucun avis pertinent pour le moment."
-                : 'Aucun résultat. Lancez une synchronisation depuis le tableau de bord.'}
-            </p>
+            <p className="text-slate-500">Aucun avis pertinent pour le moment.</p>
           </div>
         )}
 
