@@ -7,7 +7,7 @@ export default async function BoampPage() {
 
   const { data: notices, error } = await supabase
     .from('boamp_notices')
-    .select('idweb, titre, description, url_avis, date_parution, code_departement, nom_acheteur')
+    .select('idweb, titre, description, url_avis, date_parution, code_departement, nom_acheteur, date_limite_reponse, code_cpv')
     .order('date_parution', { ascending: false })
     .limit(50)
 
@@ -44,6 +44,10 @@ export default async function BoampPage() {
                   {n.code_departement && <span>Dép. {n.code_departement}</span>}
                   {n.date_parution && (
                     <span>{new Date(n.date_parution).toLocaleDateString('fr-FR')}</span>
+                  )}
+                  {n.code_cpv && <span>CPV {n.code_cpv}</span>}
+                  {n.date_limite_reponse && (
+                    <span>Limite : {new Date(n.date_limite_reponse).toLocaleString('fr-FR')}</span>
                   )}
                 </div>
               </div>

@@ -8,19 +8,51 @@ export interface BoampNotice {
   date_parution: string
   code_departement: string
   nom_acheteur: string
+  date_limite_reponse: string | null
+  code_cpv: string | null
   raw_data: Record<string, unknown>
 }
 
-function extractDescription(donnees: unknown): string {
+function parseDonnees(donnees: unknown): Record<string, unknown> | null {
   try {
-    const d = typeof donnees === 'string' ? JSON.parse(donnees) : donnees as Record<string, unknown>
-    const initial = (d as Record<string, unknown>)?.FNSimple as Record<string, unknown>
-    const nature = initial?.natureMarche as Record<string, unknown>
-    const desc = (nature?.descriptionMarche as string) || (nature?.objetMarche as string) || ''
-    return desc.slice(0, 500)
+    return typeof donnees === 'string' ? JSON.parse(donnees) : donnees as Record<string, unknown>
   } catch {
-    return ''
+    return null
   }
+}
+
+function extractDescription(donnees: unknown): string {
+  const d = parseDonnees(donnees)
+  if (!d) return ''
+  const initial = d.FNSimple as Record<string, unknown>
+  const nature = initial?.natureMarche as Record<string, unknown>
+  const desc = (nature?.descriptionMarche as string) || (nature?.objetMarche as string) || ''
+  return desc.slice(0, 500)
+}
+
+// Deadline lives under FNSimple.dateLimiteRemise.{date,heure} when present.
+function extractDeadline(donnees: unknown): string | null {
+  const d = parseDonnees(donnees)
+  if (!d) return null
+  const initial = d.FNSimple as Record<string, unknown>
+  const limite = initial?.dateLimiteRemise as Record<string, unknown>
+  const date = limite?.date as string | undefined
+  if (!date) return null
+  const heure = (limite?.heure as string) || '00:00'
+  const iso = `${date}T${heure}`
+  return isNaN(Date.parse(iso)) ? null : new Date(iso).toISOString()
+}
+
+// CPV code(s) live under FNSimple.objetMarche.cpv.principal, sometimes with
+// secondary/complementary codes alongside.
+function extractCpv(donnees: unknown): string | null {
+  const d = parseDonnees(donnees)
+  if (!d) return null
+  const initial = d.FNSimple as Record<string, unknown>
+  const objet = initial?.objetMarche as Record<string, unknown>
+  const cpv = objet?.cpv as Record<string, unknown>
+  const principal = cpv?.principal as string | undefined
+  return principal || null
 }
 
 export async function fetchBoampNotices({
@@ -69,6 +101,8 @@ export async function fetchBoampNotices({
     date_parution:   String(r.dateparution ?? '').slice(0, 10),
     code_departement: String(r.code_departement ?? ''),
     nom_acheteur:    String(r.nomacheteur ?? ''),
+    date_limite_reponse: extractDeadline(r.donnees),
+    code_cpv:        extractCpv(r.donnees),
     raw_data:        r as Record<string, unknown>,
   }))
 }
